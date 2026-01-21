@@ -72,9 +72,5 @@ app.MapDelete("/todo/{id}", async (int id, TodoDb db) =>
     return Results.Ok();
 });
 
-using(var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<TodoDb>();
-    db.Database.EnsureCreated();
-}
+
 app.Run();
