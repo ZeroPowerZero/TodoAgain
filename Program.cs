@@ -2,8 +2,7 @@
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Microsoft.EntityFrameworkCore;
 
-var todos = new List<Todo>();
-int nextId = 1;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,12 +18,12 @@ app.UseSwaggerUI();
 
 
 app.MapGet("/", () => "Hello World!");
-app.MapGet("/todo", () =>
+app.MapGet("/todo", async(TodoDb db) =>
 {
-    return todos;
+    return await db.Todos.ToListAsync();
 });
 
-app.MapPost("/todo", (TodoDto dto) =>
+app.MapPost("/todo", async (TodoDto dto, TodoDb db) =>
 {
     if (string.IsNullOrWhiteSpace(dto.Name))
     {
@@ -32,44 +31,50 @@ app.MapPost("/todo", (TodoDto dto) =>
     }
 
     var todo = new Todo
-    {
-        Id = nextId,
+    {       
         Name = dto.Name,
         IsComplete = dto.IsComplete
     };
 
-    nextId++;
-    todos.Add(todo);
+    db.Todos.Add(todo);
+    await db.SaveChangesAsync();
     
     return Results.Ok(todo);
 });
 
-app.MapPut("/todo/{id}", (int id, TodoDto inputDto) =>
+app.MapPut("/todo/{id}", async (int id, TodoDto inputDto, TodoDb db) =>
 {
     if (string.IsNullOrWhiteSpace(inputDto.Name))
     {
         return Results.BadRequest("Todo name is required");
     }
 
-    var todo = todos.FirstOrDefault(t => t.Id == id);
+    var todo = await db.Todos.FindAsync(id);
 
     if (todo == null) return Results.NotFound();
 
     todo.Name = inputDto.Name;
     todo.IsComplete = inputDto.IsComplete;
 
+    await db.SaveChangesAsync();
     return Results.Ok(todo);
 });
 
-app.MapDelete("/todo/{id}", (int id) =>
+app.MapDelete("/todo/{id}", async (int id, TodoDb db) =>
 {
-    var todo = todos.FirstOrDefault(t => t.Id == id);
+    var todo = await db.Todos.FindAsync(id);
     if (todo == null)
         return Results.NotFound();
 
-    todos.Remove(todo);
+    db.Todos.Remove(todo);
+    await db.SaveChangesAsync();
+
     return Results.Ok();
 });
 
-
+using(var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<TodoDb>();
+    db.Database.EnsureCreated();
+}
 app.Run();
