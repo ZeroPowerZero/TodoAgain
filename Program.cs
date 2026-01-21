@@ -6,8 +6,10 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDbContext<TodoDb>(options => 
-    options.UseSqlite("Data source=todos.db"));
+builder.Services.AddDbContext<TodoDb>(options =>
+    options.UseNpgsql(
+        "Host=localhost;Port=5432;Database=tododb;Username=postgres;Password=zeropowerzero0"));
+
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
